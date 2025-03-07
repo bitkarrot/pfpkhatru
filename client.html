@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Picture Cache Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .controls input {
+            flex-grow: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .controls button {
+            padding: 8px 16px;
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .controls button:hover {
+            background-color: #0055aa;
+        }
+        .profiles {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        .profile {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .profile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .profile img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        .profile .name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .profile .pubkey {
+            font-size: 0.8em;
+            color: #666;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f8f8f8;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Profile Picture Cache Demo</h1>
+    
+    <div class="controls">
+        <input type="text" id="pubkey-input" placeholder="Enter a pubkey to add">
+        <button id="add-pubkey">Add Pubkey</button>
+        <button id="cache-all">Cache All Profiles</button>
+        <button id="clear-all">Clear All</button>
+    </div>
+    
+    <div class="status" id="status">Ready to cache profiles</div>
+    
+    <div class="profiles" id="profiles-container"></div>
+
+    <script>
+        // Configuration
+        const RELAY_URL = 'http://localhost:8080'; // Change this to your relay URL
+        
+        // State
+        let pubkeys = [];
+        
+        // DOM elements
+        const pubkeyInput = document.getElementById('pubkey-input');
+        const addPubkeyButton = document.getElementById('add-pubkey');
+        const cacheAllButton = document.getElementById('cache-all');
+        const clearAllButton = document.getElementById('clear-all');
+        const statusElement = document.getElementById('status');
+        const profilesContainer = document.getElementById('profiles-container');
+        
+        // Event listeners
+        addPubkeyButton.addEventListener('click', addPubkey);
+        cacheAllButton.addEventListener('click', cacheAllProfiles);
+        clearAllButton.addEventListener('click', clearAll);
+        pubkeyInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addPubkey();
+        });
+        
+        // Load pubkeys from localStorage
+        function loadPubkeys() {
+            const savedPubkeys = localStorage.getItem('pfpcache-pubkeys');
+            if (savedPubkeys) {
+                pubkeys = JSON.parse(savedPubkeys);
+                renderProfiles();
+            }
+        }
+        
+        // Save pubkeys to localStorage
+        function savePubkeys() {
+            localStorage.setItem('pfpcache-pubkeys', JSON.stringify(pubkeys));
+        }
+        
+        // Add a pubkey to the list
+        function addPubkey() {
+            const pubkey = pubkeyInput.value.trim();
+            if (!pubkey) return;
+            
+            if (pubkeys.includes(pubkey)) {
+                setStatus(`Pubkey ${pubkey.substring(0, 8)}... already in list`);
+                return;
+            }
+            
+            pubkeys.push(pubkey);
+            savePubkeys();
+            renderProfiles();
+            pubkeyInput.value = '';
+            setStatus(`Added pubkey ${pubkey.substring(0, 8)}...`);
+        }
+        
+        // Cache all profiles
+        async function cacheAllProfiles() {
+            if (pubkeys.length === 0) {
+                setStatus('No pubkeys to cache');
+                return;
+            }
+            
+            setStatus(`Requesting cache for ${pubkeys.length} profiles...`);
+            
+            try {
+                const response = await fetch(`${RELAY_URL}/cache-profiles`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pubkeys })
+                });
+                
+                const result = await response.json();
+                setStatus(`Cache request sent: ${result.message} (${result.count})`);
+            } catch (error) {
+                setStatus(`Error: ${error.message}`);
+            }
+        }
+        
+        // Clear all pubkeys
+        function clearAll() {
+            pubkeys = [];
+            savePubkeys();
+            renderProfiles();
+            setStatus('All pubkeys cleared');
+        }
+        
+        // Render the profiles
+        function renderProfiles() {
+            profilesContainer.innerHTML = '';
+            
+            pubkeys.forEach(pubkey => {
+                const profileElement = document.createElement('div');
+                profileElement.className = 'profile';
+                
+                const imgUrl = `${RELAY_URL}/profile-pic/${pubkey}`;
+                
+                profileElement.innerHTML = `
+                    <img src="${imgUrl}" alt="Profile" onerror="this.src='https://robohash.org/${pubkey}?set=set4'">
+                    <div class="pubkey">${pubkey.substring(0, 8)}...</div>
+                    <button class="remove-btn" data-pubkey="${pubkey}">Remove</button>
+                `;
+                
+                profilesContainer.appendChild(profileElement);
+                
+                // Add remove button event listener
+                profileElement.querySelector('.remove-btn').addEventListener('click', () => {
+                    pubkeys = pubkeys.filter(pk => pk !== pubkey);
+                    savePubkeys();
+                    renderProfiles();
+                    setStatus(`Removed pubkey ${pubkey.substring(0, 8)}...`);
+                });
+            });
+        }
+        
+        // Set status message
+        function setStatus(message) {
+            statusElement.textContent = message;
+        }
+        
+        // Initialize
+        loadPubkeys();
+    </script>
+</body>
+</html>

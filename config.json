@@ -1,0 +1,22 @@
+{
+  "listen_addr": ":8080",
+  "database_path": "./data/events.db",
+  "media_cache_path": "./data/media_cache",
+  "upstream_relays": [
+    "wss://relay.damus.io",
+    "wss://relay.nostr.band",
+    "wss://nos.lol",
+    "wss://nostr.mom",
+    "wss://relay.current.fyi",
+    "wss://nostr.wine",
+    "wss://relay.snort.social"
+  ],
+  "max_concurrent": 20,
+  "cache_expiration_days": 7,
+  "max_cache_size_mb": 1000,
+  "lru_check_interval": 60,
+  "resize_images": true,
+  "max_image_size": 200,
+  "image_quality": 85,
+  "cleanup_interval_minutes": 60
+}
