@@ -13,6 +13,9 @@ A Nostr relay that caches profile pictures for fast access. It stores metadata e
 - LRU (Least Recently Used) cache management to automatically remove old files when cache size limit is reached
 - Image resizing to optimize storage and bandwidth usage
 
+## TODO
+- make this work with LMDB, sqlite was just for testing
+
 ## Installation
 
 ### Prerequisites
