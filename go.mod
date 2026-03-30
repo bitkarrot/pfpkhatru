@@ -1,6 +1,6 @@
 module github.com/bitkarrot/khatru-pfpcache
 
-go 1.23.1
+go 1.25.0
 
 require (
 	github.com/disintegration/imaging v1.6.2
@@ -36,6 +36,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	golang.org/x/exp v0.0.0-20250210185358-939b2ce775ac // indirect
-	golang.org/x/image v0.18.0 // indirect
+	golang.org/x/image v0.38.0 // indirect
 	golang.org/x/net v0.38.0 // indirect
 )
